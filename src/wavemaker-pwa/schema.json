@@ -1,0 +1,33 @@
+{
+	"$schema": "http://json-schema.org/schema",
+	"id": "WavemakerPwaSchema",
+	"type": "object",
+	"properties": {
+		"iconsPath": {
+			"type": "string",
+			"format": "path",
+			"visible": false
+		},
+		"project": {
+			"type": "string",
+			"description": "The name of the project.",
+			"$default": {
+				"$source": "projectName"
+			}
+		},
+		"title": {
+			"type": "string",
+			"description": "The title of the app."
+		},
+		"themeColor": {
+			"type": "string",
+			"description": "The theme color of the app.",
+			"default": "#2c3049"
+		},
+		"deployUrl": {
+			"type": "string",
+			"description": "The url where the app is deployed.",
+			"default": "ng-bundle"
+		}
+	}
+}

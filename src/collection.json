@@ -1,0 +1,17 @@
+{
+  "$schema": "../node_modules/@angular-devkit/schematics/collection-schema.json",
+  "schematics": {
+    "ng-add": {
+      "description": "Runs angular PWA schematics and adds wavemaker related changes.",
+      "factory": "./wavemaker-pwa/index#wavemakerPwa",
+      "schema": "./wavemaker-pwa/schema.json",
+      "private": true,
+      "hidden": true
+    },
+    "wavemaker-pwa": {
+      "description": "Runs angular PWA schematics and adds wavemaker related changes.",
+      "factory": "./wavemaker-pwa/index#wavemakerPwa",
+      "schema": "./wavemaker-pwa/schema.json"
+    }
+  }
+}
