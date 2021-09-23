@@ -67,8 +67,8 @@ function copyExternalIcons(tree: Tree, iconsMap: Record<string, number[]>, exter
 function copyWmIcons(wmIconsPath: string, appIconsPath: string) {
     return apply(
         url(wmIconsPath), [
-            move(appIconsPath),
-        ],
+        move(appIconsPath),
+    ],
     );
 }
 
@@ -106,28 +106,30 @@ export function wavemakerPwa(options: PwaSchema): Rule {
         // copy manifest file
         const copyManifest = apply(
             url('./files/manifest'), [
-                template(options), move(posix.join(sourceRoot))
-            ]
+            template(options), move(posix.join(sourceRoot))
+        ]
         );
 
         // add manifest to assets
         const assetEntry = posix.join(sourceRoot, 'manifest.webmanifest');
-        for (const target of project.targets.values()) {
-            if (target.builder === '@angular-builders/custom-webpack:browser') {
-                if (target.options) {
-                    if (Array.isArray(target.options.assets)) {
-                        target.options.assets.push(assetEntry);
+        if (project.targets.has('build')) {
+            const targetValue = project.targets.get('build');
+            if (targetValue) {
+                if (targetValue.options) {
+                    if (Array.isArray(targetValue.options.assets) && !targetValue.options.assets.includes(assetEntry)) {
+                        targetValue.options.assets.push(assetEntry);
                     } else {
-                        target.options.assets = [assetEntry];
+                        targetValue.options.assets = [assetEntry];
                     }
                 } else {
-                    target.options = { assets: [assetEntry] };
+                    targetValue.options = { assets: [assetEntry] };
                 }
             }
         }
+
         return chain([
-            updateWorkspace(workspace),
             externalSchematic('@angular/pwa', 'pwa', options),
+            updateWorkspace(workspace),
             mergeWith(copyManifest, MergeStrategy.Overwrite),
             mergeWith(copyIcons, MergeStrategy.Overwrite),
         ]);
