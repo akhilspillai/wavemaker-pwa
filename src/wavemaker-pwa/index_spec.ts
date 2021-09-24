@@ -4,7 +4,7 @@ import { Schema as WorkspaceOptions } from '@schematics/angular/workspace/schema
 import { Schema as ApplicationOptions, Style } from '@schematics/angular/application/schema';
 import { Tree } from '@angular-devkit/schematics';
 import * as fs from 'fs';
-import { DIMENSIONS, getIconName } from '.';
+import { APPLE_TOUCH_ICON, DIMENSIONS, getIconName } from '.';
 
 const workspaceOptions: WorkspaceOptions = {
     name: 'workspace',
@@ -82,11 +82,6 @@ describe('wavemaker-pwa', () => {
             '@schematics/angular', 'workspace', workspaceOptions).toPromise();
         appTree = await runner.runExternalSchematicAsync(
             '@schematics/angular', 'application', appOptions, appTree).toPromise();
-        // modify angular json to bring it closer to wavemaker's config
-        const existingConfigText = appTree.readContent('/angular.json');
-        const existingConfig = JSON.parse(existingConfigText);
-        existingConfig.projects.bar.architect.build.builder = "@angular-builders/custom-webpack:browser";
-        appTree.overwrite('/angular.json', JSON.stringify(existingConfig, null, 2));
     });
 
     it('should fail with missing tree', async () => {
@@ -103,7 +98,7 @@ describe('wavemaker-pwa', () => {
         const manifest = JSON.parse(tree.readContent(manifestPath));
         expect(manifest.name).toEqual(appOptions.name);
         expect(manifest.theme_color).toEqual('#2c3049');
-        manifest.icons.forEach((iconDetail: { src: string })=> {
+        manifest.icons.forEach((iconDetail: { src: string }) => {
             expect(iconDetail.src.startsWith("ng-bundle")).toBeTrue();
         });
         expect(manifest.theme_color).toEqual('#2c3049');
@@ -130,12 +125,26 @@ describe('wavemaker-pwa', () => {
         const defaultProjPath = posix.join('/projects', appOptions.name);
         const manifestPath = posix.join(defaultProjPath, 'src/manifest.webmanifest');
         const manifest = JSON.parse(tree.readContent(manifestPath));
-        manifest.icons.forEach((iconDetail: { src: string })=> {
+        manifest.icons.forEach((iconDetail: { src: string }) => {
             expect(iconDetail.src.startsWith(deployUrl)).toBeTrue();
         });
     });
 
     it('should have the manifest file in assets', async () => {
+        const tree = await runner.runSchematicAsync('ng-add', {}, appTree).toPromise();
+        const configText = tree.readContent('/angular.json');
+        const config = JSON.parse(configText);
+        const targets = config.projects.bar.architect;
+        expect(targets.build.options.assets).toContain('projects/bar/src/manifest.webmanifest');
+    });
+
+    it('should have the manifest file in assets of a custom builder', async () => {
+        // Setting a custom builder
+        const existingConfigText = appTree.readContent('/angular.json');
+        const existingConfig = JSON.parse(existingConfigText);
+        existingConfig.projects.bar.architect.build.builder = "@test-builders/custom-builder:browser";
+        appTree.overwrite('/angular.json', JSON.stringify(existingConfig, null, 2));
+
         const tree = await runner.runSchematicAsync('ng-add', {}, appTree).toPromise();
         const configText = tree.readContent('/angular.json');
         const config = JSON.parse(configText);
@@ -224,6 +233,20 @@ describe('wavemaker-pwa', () => {
                 const destination = posix.join(defaultProjPath, 'src/assets/icons', iconName);
                 expect(compareImages(tree, source, destination)).toEqual(0);
             });
+        });
+
+        it('should update the index.html with apple-icon', async () => {
+            const tree = await runner.runSchematicAsync('ng-add', {}, appTree).toPromise();
+            const defaultProjPath = posix.join('/projects', appOptions.name);
+            const indexFilePath = posix.join(defaultProjPath, 'src/index.html');
+
+            const content: Buffer | null = tree.read(indexFilePath);
+            let strContent: string = '';
+            if (content) {
+                strContent = content.toString('utf8');
+            }
+
+            expect(strContent).toContain(APPLE_TOUCH_ICON);
         });
     });
 });

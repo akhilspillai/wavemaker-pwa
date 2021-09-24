@@ -15,8 +15,10 @@ import {
 import { posix } from 'path';
 import { Schema as PwaSchema } from './schema'
 import { getWorkspace, updateWorkspace } from '@schematics/angular/utility/workspace';
+import cheerio from 'cheerio';
 import * as fs from 'fs';
 
+export const APPLE_TOUCH_ICON = '<link rel="apple-touch-icon" href="ng-bundle/assets/icons/icon-192x192.png">';
 export const DIMENSIONS = [512, 384, 192, 152, 144, 128, 96, 72];
 
 export const getIconName = (dim: number) => `icon-${dim}x${dim}.png`;
@@ -67,9 +69,27 @@ function copyExternalIcons(tree: Tree, iconsMap: Record<string, number[]>, exter
 function copyWmIcons(wmIconsPath: string, appIconsPath: string) {
     return apply(
         url(wmIconsPath), [
-            move(appIconsPath),
-        ],
+        move(appIconsPath),
+    ],
     );
+}
+
+function updateIndexFile(path: string): Rule {
+    return (tree, context) => {
+        const content: Buffer | null = tree.read(path);
+        let strContent: string = '';
+        if (content) {
+            strContent = content.toString('utf8');
+        } else {
+            context.logger.error('Invalid file content');
+        }
+        
+        const $ = cheerio.load(strContent);
+        $('head').append(APPLE_TOUCH_ICON);
+
+        tree.overwrite(path, $.html());
+        return tree;
+    };
 }
 
 export function wavemakerPwa(options: PwaSchema): Rule {
@@ -106,30 +126,33 @@ export function wavemakerPwa(options: PwaSchema): Rule {
         // copy manifest file
         const copyManifest = apply(
             url('./files/manifest'), [
-                template(options), move(posix.join(sourceRoot))
-            ]
+            template(options), move(posix.join(sourceRoot))
+        ]
         );
 
         // add manifest to assets
         const assetEntry = posix.join(sourceRoot, 'manifest.webmanifest');
-        for (const target of project.targets.values()) {
-            if (target.builder === '@angular-builders/custom-webpack:browser') {
-                if (target.options) {
-                    if (Array.isArray(target.options.assets)) {
-                        target.options.assets.push(assetEntry);
+        if (project.targets.has('build')) {
+            const targetValue = project.targets.get('build');
+            if (targetValue) {
+                if (targetValue.options) {
+                    if (Array.isArray(targetValue.options.assets) && !targetValue.options.assets.includes(assetEntry)) {
+                        targetValue.options.assets.push(assetEntry);
                     } else {
-                        target.options.assets = [assetEntry];
+                        targetValue.options.assets = [assetEntry];
                     }
                 } else {
-                    target.options = { assets: [assetEntry] };
+                    targetValue.options = { assets: [assetEntry] };
                 }
             }
         }
+
         return chain([
-            updateWorkspace(workspace),
             externalSchematic('@angular/pwa', 'pwa', options),
+            updateWorkspace(workspace),
             mergeWith(copyManifest, MergeStrategy.Overwrite),
             mergeWith(copyIcons, MergeStrategy.Overwrite),
+            updateIndexFile(posix.join(sourceRoot, 'index.html'))
         ]);
     };
 }
