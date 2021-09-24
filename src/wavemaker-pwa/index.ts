@@ -15,8 +15,10 @@ import {
 import { posix } from 'path';
 import { Schema as PwaSchema } from './schema'
 import { getWorkspace, updateWorkspace } from '@schematics/angular/utility/workspace';
+import cheerio from 'cheerio';
 import * as fs from 'fs';
 
+export const APPLE_TOUCH_ICON = '<link rel="apple-touch-icon" href="ng-bundle/assets/icons/icon-192x192.png">';
 export const DIMENSIONS = [512, 384, 192, 152, 144, 128, 96, 72];
 
 export const getIconName = (dim: number) => `icon-${dim}x${dim}.png`;
@@ -70,6 +72,24 @@ function copyWmIcons(wmIconsPath: string, appIconsPath: string) {
         move(appIconsPath),
     ],
     );
+}
+
+function updateIndexFile(path: string): Rule {
+    return (tree, context) => {
+        const content: Buffer | null = tree.read(path);
+        let strContent: string = '';
+        if (content) {
+            strContent = content.toString('utf8');
+        } else {
+            context.logger.error('Invalid file content');
+        }
+        
+        const $ = cheerio.load(strContent);
+        $('head').append(APPLE_TOUCH_ICON);
+
+        tree.overwrite(path, $.html());
+        return tree;
+    };
 }
 
 export function wavemakerPwa(options: PwaSchema): Rule {
@@ -132,6 +152,7 @@ export function wavemakerPwa(options: PwaSchema): Rule {
             updateWorkspace(workspace),
             mergeWith(copyManifest, MergeStrategy.Overwrite),
             mergeWith(copyIcons, MergeStrategy.Overwrite),
+            updateIndexFile(posix.join(sourceRoot, 'index.html'))
         ]);
     };
 }

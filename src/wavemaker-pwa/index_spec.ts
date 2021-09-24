@@ -4,7 +4,7 @@ import { Schema as WorkspaceOptions } from '@schematics/angular/workspace/schema
 import { Schema as ApplicationOptions, Style } from '@schematics/angular/application/schema';
 import { Tree } from '@angular-devkit/schematics';
 import * as fs from 'fs';
-import { DIMENSIONS, getIconName } from '.';
+import { APPLE_TOUCH_ICON, DIMENSIONS, getIconName } from '.';
 
 const workspaceOptions: WorkspaceOptions = {
     name: 'workspace',
@@ -233,6 +233,20 @@ describe('wavemaker-pwa', () => {
                 const destination = posix.join(defaultProjPath, 'src/assets/icons', iconName);
                 expect(compareImages(tree, source, destination)).toEqual(0);
             });
+        });
+
+        it('should update the index.html with apple-icon', async () => {
+            const tree = await runner.runSchematicAsync('ng-add', {}, appTree).toPromise();
+            const defaultProjPath = posix.join('/projects', appOptions.name);
+            const indexFilePath = posix.join(defaultProjPath, 'src/index.html');
+
+            const content: Buffer | null = tree.read(indexFilePath);
+            let strContent: string = '';
+            if (content) {
+                strContent = content.toString('utf8');
+            }
+
+            expect(strContent).toContain(APPLE_TOUCH_ICON);
         });
     });
 });
