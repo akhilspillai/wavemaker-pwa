@@ -6,7 +6,7 @@
 		"iconsPath": {
 			"type": "string",
 			"format": "path",
-			"visible": false
+			"description": "The path to an external icons directory."
 		},
 		"project": {
 			"type": "string",

@@ -56,7 +56,11 @@ function copyExternalIcons(tree: Tree, iconsMap: Record<string, number[]>, exter
             const dimensions = iconsMap[fileEntry.path.slice(1)]; // remove leading '/'
             for (const dim of dimensions) {
                 const filePath = posix.join(appIconsPath, getIconName(dim));
-                tree.create(filePath, fileEntry.content);
+                if (tree.exists(filePath)) {
+                    tree.overwrite(filePath, fileEntry.content);
+                } else {
+                    tree.create(filePath, fileEntry.content);
+                }
             }
             return null;
         })

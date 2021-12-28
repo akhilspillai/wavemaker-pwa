@@ -175,15 +175,16 @@ describe('wavemaker-pwa', () => {
             const manifest = JSON.parse(tree.readContent(manifestPath));
             expect(manifest.name).toEqual(appOptions.name);
             expect(manifest.theme_color).toEqual('#2c3049');
-            DIMENSIONS.forEach(dim => {
-                let iconName = getIconName(dim);
+            for (const dim of DIMENSIONS) {
+                const originalIconName = getIconName(dim);
+                let copiedIconName = originalIconName;
                 if (missingDimensions.includes(dim)) {
-                    iconName = getIconName(192);
+                    copiedIconName = getIconName(192);
                 }
-                const source = posix.join(iconsPath, iconName);
-                const destination = posix.join(defaultProjPath, 'src/assets/icons', iconName);
+                const source = posix.join(iconsPath, copiedIconName);
+                const destination = posix.join(defaultProjPath, 'src/assets/icons', originalIconName);
                 expect(compareImages(tree, source, destination)).toEqual(0);
-            });
+            }
         });
 
         it('should copy 384 resolution icon for missing 192 resolution icon', async () => {
@@ -197,15 +198,16 @@ describe('wavemaker-pwa', () => {
             const manifest = JSON.parse(tree.readContent(manifestPath));
             expect(manifest.name).toEqual(appOptions.name);
             expect(manifest.theme_color).toEqual('#2c3049');
-            DIMENSIONS.forEach(dim => {
-                let iconName = getIconName(dim);
+            for (const dim of DIMENSIONS) {
+                const originalIconName = getIconName(dim);
+                let copiedIconName = originalIconName;
                 if (missingDimensions.includes(dim)) {
-                    iconName = getIconName(384);
+                    copiedIconName = getIconName(384);
                 }
-                const source = posix.join(iconsPath, iconName);
-                const destination = posix.join(defaultProjPath, 'src/assets/icons', iconName);
+                const source = posix.join(iconsPath, copiedIconName);
+                const destination = posix.join(defaultProjPath, 'src/assets/icons', originalIconName);
                 expect(compareImages(tree, source, destination)).toEqual(0);
-            });
+            }
         });
 
         it('should copy default icons if icons are missing in source', async () => {
@@ -218,12 +220,12 @@ describe('wavemaker-pwa', () => {
             const manifest = JSON.parse(tree.readContent(manifestPath));
             expect(manifest.name).toEqual(appOptions.name);
             expect(manifest.theme_color).toEqual('#2c3049');
-            DIMENSIONS.forEach(dim => {
+            for (const dim of DIMENSIONS) {
                 const iconName = getIconName(dim);
                 const source = posix.join(__dirname, '/files/assets/default-icons', iconName);
                 const destination = posix.join(defaultProjPath, 'src/assets/icons', iconName);
                 expect(compareImages(tree, source, destination)).toEqual(0);
-            });
+            }
         });
     });
 });
